@@ -5,7 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PublishAot>true</PublishAot>
+    <!--  使用运行时包进行AOT编译，确保生成的原生代码与目标平台兼容 -->
     <PublishAotUsingRuntimePack>true</PublishAotUsingRuntimePack>
+    
     <RuntimeIdentifier Condition=" '$(RuntimeIdentifier)' == '' ">linux-bionic-arm64</RuntimeIdentifier>
     <!-- SkiaSharp nightly feed -->
     <RestoreAdditionalProjectSources>https://aka.ms/skiasharp-eap/index.json</RestoreAdditionalProjectSources>
@@ -14,19 +16,27 @@
   <!-- Trimmer switches -->
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <!-- From Android workload: https://github.com/xamarin/xamarin-android/blob/80ee320ed0bb245768ba436b76f9309aca18abc3/src/Xamarin.Android.Build.Tasks/Microsoft.Android.Sdk/targets/Microsoft.Android.Sdk.DefaultProperties.targets#L95-L110 -->
+    <!-- 默認false 禁用全球化本地化支持，减少应用体积，适用于不需要多语言的应用 -->
     <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- 默認false 使用系统资源键而非本地化资源，进一步优化体积 -->
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <!-- 默認true 禁用可空类型上下文元数据生成，减少元数据大小 -->
     <NullabilityInfoContextSupport>false</NullabilityInfoContextSupport>
+    <!-- 默認false AggressiveAttributeTrimming -->
     <_AggressiveAttributeTrimming>true</_AggressiveAttributeTrimming>
+    <!-- 默認false 禁用反射 -->
     <!-- From SmolSharp: https://github.com/ascpixi/smolsharp/blob/54a4aeb6e8f6cdd64d049862dee611301082e71b/src/SmolSharp.props#L48-L57 -->
     <IlcDisableReflection>true</IlcDisableReflection>
+    <!-- 默認true 禁用堆栈跟踪生成，减少代码体积 -->
     <StackTraceSupport>false</StackTraceSupport>
+    <!-- 优化目标为代码体积最小化（Size），适用于资源受限环境 -->
     <OptimizationPreference>Size</OptimizationPreference>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- https://github.com/exelix11/SysDVR/blob/master/Client/Client.csproj -->
     <!-- Android needs a proper soname property or it will refuse to load the library -->
+    <!-- 指定生成的共享库文件名为libdotnet.so ，满足Android平台对共享库命名的要求。 -->
     <LinkerArg Include="-Wl,-soname,libdotnet.so" />
   </ItemGroup>
 
@@ -34,8 +44,10 @@
     <PackageReference Include="SkiaSharp" Version="3.0.0-preview.1.4" />
   </ItemGroup>
 
+  <!-- 发布后自定义任务（Target） -->
   <Target Name="_AfterPublish" AfterTargets="Publish">
     <PropertyGroup>
+    <!-- 在发布完成后，将生成的原生文件（如libdotnet.so ）复制到Android项目的libs/arm64-v8a目录，确保Android应用能正确加载。 -->
       <_NativeFolder>$(MSBuildThisFileDirectory)../Native/app/src/main/libs/arm64-v8a</_NativeFolder>
     </PropertyGroup>
     <MakeDir Directories="$(_NativeFolder)" />
@@ -45,6 +57,7 @@
     <Copy SourceFiles="@(_FilesToCopy)" DestinationFolder="$(_NativeFolder)" />
   </Target>
 
+<!-- 引入自定义的构建目标文件libdotnet.targets，可能包含平台特定的编译或部署逻辑。 -->
   <Import Project="libdotnet.targets" />
 
 </Project>
